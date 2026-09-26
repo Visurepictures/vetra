@@ -1,0 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
+
+:root {
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #111827;
+  background: #f6f7fb;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --font-display: 'Manrope', 'DM Sans', sans-serif;
+  --vetra-bg: #f6f7fb;
+  --vetra-bg-secondary: #f8f9fc;
+  --vetra-text: #111827;
+  --vetra-muted: #64748b;
+  --vetra-faint: rgba(100, 116, 139, 0.65);
+  --vetra-glass: rgba(255, 255, 255, 0.7);
+  --vetra-glass-strong: rgba(255, 255, 255, 0.86);
+  --vetra-border: rgba(148, 163, 184, 0.22);
+  --vetra-highlight: rgba(255, 255, 255, 0.9);
+  --vetra-blue: #8b7cf6;
+  --vetra-blue-deep: #6d5ce7;
+  --vetra-violet: #8b7cf6;
+  --vetra-mint: #a693ff;
+  --vetra-radius: 24px;
+  --vetra-blur: blur(24px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  min-height: 100%;
+  background: var(--vetra-bg);
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+  background: var(--vetra-bg);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #9ccaff;
+  outline-offset: 3px;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
