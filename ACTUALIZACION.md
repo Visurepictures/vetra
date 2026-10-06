@@ -16,15 +16,14 @@
 ## Verificación
 Pruebas automatizadas de cálculos, migración, fechas, importación, pagos y almacenamiento; lint y build. Recorrido local con datos ficticios: perfil, presupuesto, descuento, guardar, recargar, documento, pago y visualización móvil. La vista previa del documento fue revisada; el resultado de impresión depende también del navegador y sus opciones.
 
-## IA: integración pendiente
-La revisión actual usa reglas deterministas locales y lo declara explícitamente. No se envían datos a un modelo.
+## IA local gratuita
+Asistente opcional en el editor: WebLLM y Qwen 2.5 1.5B ejecutados en el dispositivo. Propone etapas entre una lista de actividades profesionales y preguntas sobre información que falta con una descripción y contexto mínimo del presupuesto. Las horas empiezan en cero para evitar estimaciones inventadas. El usuario informa las horas, selecciona actividades y define la tarifa antes de añadirlas. No sustituye las actividades existentes ni modifica impuestos, margen, cliente o documentos.
 
-Para una IA personalizada real:
-1. Servicio privado con autenticación y datos separados por usuario; políticas de acceso verificadas.
-2. Endpoint del servidor con clave del proveedor protegida, límites de uso y presupuesto. Nunca incluir claves en GitHub Pages.
-3. Enviar solo los datos necesarios del trabajo, con consentimiento claro; excluir identificadores fiscales y contactos por defecto.
-4. El modelo propone actividades, horas y preguntas en una estructura validada. La fórmula de Vetra sigue calculando los importes.
-5. Mostrar supuestos y cambios propuestos; el usuario confirma antes de cambiar, guardar o compartir una propuesta.
-6. Revisar privacidad, retención, eliminación, costos y pruebas de aislamiento antes de activar la función.
+Se activa y descarga únicamente a petición del usuario. La primera carga descarga aproximadamente 1 GB desde Hugging Face/MLC; requiere WebGPU, memoria y conexión. El texto se procesa localmente. Usa energía y memoria, pero no cobra API ni suscripción. Cancela y libera el worker al cerrar, salir del editor o por inactividad. Presenta errores de compatibilidad y carga sin afectar el presupuesto. Las sugerencias son estimaciones que requieren revisión.
 
-La elección del proveedor, alojamiento privado, cuentas y presupuesto debe concretarse antes de activar una integración externa. GitHub Pages solo aloja la aplicación estática actual.
+La revisión por reglas sigue disponible en cualquier navegador. No hay sincronización de cuentas ni IA en la nube. La interfaz declara los límites del modelo y la descarga antes de activarlo.
+
+Referencias: https://webllm.mlc.ai/docs/user/advanced_usage.html y https://webllm.mlc.ai/docs/user/basic_usage.html
+
+## Posible integración en la nube
+Requeriría servidor privado, autenticación, aislamiento por usuario, clave protegida, consentimiento para envío de datos y presupuesto definido. La integración gratuita actual no depende de ese servidor.

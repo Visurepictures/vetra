@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { calculateBudget, calculateDurationParts, formatCurrency, getHourlyCost, isDateRangeValid, parseLocalDateTime, reviewBudget, sanitizeNumber, toLocalDateTimeValue } from '../utils/calculations'
 import { readStorage, removeStorage, writeStorage } from '../utils/storage'
+import BudgetAI from './BudgetAI'
+import { appendSuggestedActivities } from '../utils/aiSuggestions'
 import DateTimePickerModal from './DateTimePickerModal'
 
 const templates = {
@@ -67,6 +69,7 @@ export default function BudgetEditor({ profile, initialBudget, clients, createBu
   return <main className="page-wrap app-page guided-editor">
     <header className="editor-bar"><button className="back-link" onClick={() => leave(onBack)}>← Voltar ao painel</button><span role="status">{draftStatus}</span></header>
     <section className="subpage-heading"><span className="eyebrow">DO ESCOPO À PROPOSTA</span><h1>{initialBudget?.id ? 'Editar orçamento' : 'Criar orçamento'}</h1><p>Seus dados, seu trabalho, um preço explicado.</p></section>
+    <BudgetAI budget={budget} profile={profile} onApply={(activities, rate) => { setBudget(current => appendSuggestedActivities(current, activities, rate)); setStep(1) }} />
     <nav className="editor-steps" aria-label="Etapas do orçamento">{['Trabalho', 'Tempo e gastos', 'Preço', 'Revisão'].map((name, index) => <button key={name} aria-current={step === index ? 'step' : undefined} onClick={() => setStep(index)}><span>{index + 1}</span>{name}</button>)}</nav>
     <div className="editor-layout"><div className="editor-main">
       {step === 0 && <section className="glass-panel form-panel"><h2>O que você vai realizar?</h2><div className="input-grid two">
