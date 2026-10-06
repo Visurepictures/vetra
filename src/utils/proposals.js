@@ -77,6 +77,8 @@ export function nextProposalNumber(budgets = [], date = new Date()) {
 
 export function migrateProposal(budget, budgets = []) {
   const migrated = { ...defaultProposalFields, ...budget }
+  migrated.id ||= crypto.randomUUID()
+  migrated.calculationVersion = [2, 3].includes(budget?.calculationVersion) ? budget.calculationVersion : 1
   migrated.activities = Array.isArray(migrated.activities) ? migrated.activities.map((activity) => ({ id: activity?.id || crypto.randomUUID(), name: activity?.name || 'Atividade', quantity: activity?.quantity ?? 0, unitValue: activity?.unitValue ?? 0 })) : []
   migrated.expenses = { transport: 0, equipment: 0, food: 0, other: 0, ...(migrated.expenses && typeof migrated.expenses === 'object' ? migrated.expenses : {}) }
   migrated.urgent = Boolean(migrated.urgent)
@@ -93,8 +95,8 @@ export function migrateProposal(budget, budgets = []) {
 export function migrateProposals(value) {
   if (!Array.isArray(value)) return []
   const result = []
-  value.forEach((budget, index) => {
-    let migrated = migrateProposal(budget || {}, result, index)
+  value.filter((item) => item && typeof item === 'object' && !Array.isArray(item)).forEach((budget) => {
+    let migrated = migrateProposal(budget, result)
     if (result.some((item) => item.proposalNumber === migrated.proposalNumber)) {
       migrated = { ...migrated, proposalNumber: nextProposalNumber(result) }
     }

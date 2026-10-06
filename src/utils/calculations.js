@@ -6,6 +6,46 @@ export function toLocalDateTimeValue(date) { if (!(date instanceof Date) || Numb
 export function createDefaultDateRange() { const start = new Date(); start.setSeconds(0, 0); start.setMinutes(Math.ceil(start.getMinutes() / 5) * 5); if (start.getMinutes() === 60) { start.setHours(start.getHours() + 1, 0) } const end = new Date(start.getTime() + 3600000); return { startAt: toLocalDateTimeValue(start), endAt: toLocalDateTimeValue(end) } }
 export function calculateDurationParts(startAt, endAt) { const start = parseLocalDateTime(startAt); const end = parseLocalDateTime(endAt); if (!start || !end || end <= start) return { hours: 0, minutes: 0, decimal: 0 }; const totalMinutes = Math.round((end - start) / 60000); return { hours: Math.floor(totalMinutes / 60), minutes: totalMinutes % 60, decimal: totalMinutes / 60 } }
 export function isDateRangeValid(startAt, endAt, { allowPast = false } = {}) { const start = parseLocalDateTime(startAt); const end = parseLocalDateTime(endAt); if (!start || !end || end <= start) return false; if (!allowPast) { const today = new Date(); today.setHours(0, 0, 0, 0); if (start < today) return false } return true }
-export function calculateBudget(budget = {}) { const activities = Array.isArray(budget.activities) ? budget.activities : []; const services = activities.reduce((sum, activity) => sum + sanitizeNumber(activity?.quantity) * sanitizeNumber(activity?.unitValue), 0); const expenses = Object.values(budget.expenses && typeof budget.expenses === 'object' ? budget.expenses : {}).reduce((sum, value) => sum + sanitizeNumber(value), 0); const directCost = services + expenses; const urgency = budget.urgent ? directCost * 0.25 : 0; const base = directCost + urgency; const taxes = Math.min(sanitizeNumber(budget.taxes) / 100, 0.99); const margin = Math.min(sanitizeNumber(budget.profitMargin) / 100, 0.99); const validSustainableDivisor = 1 - taxes - margin > 0; const minimumPrice = base > 0 && Number.isFinite(base / (1 - taxes)) ? base / (1 - taxes) : 0; const sustainablePrice = base > 0 && validSustainableDivisor && Number.isFinite(base / validSustainableDivisor) ? base / validSustainableDivisor : 0; return { services, expenses, urgency, directCost, minimumPrice, sustainablePrice, isValid: validSustainableDivisor && Number.isFinite(services) && Number.isFinite(expenses) }
+export function calculateBudget(budget = {}) {
+  const activities = Array.isArray(budget.activities) ? budget.activities : []
+  const services = activities.reduce((sum, activity) => sum + sanitizeNumber(activity?.quantity) * sanitizeNumber(activity?.unitValue), 0)
+  const hours = activities.reduce((sum, activity) => sum + sanitizeNumber(activity?.quantity), 0)
+  const expenses = Object.values(budget.expenses && typeof budget.expenses === 'object' ? budget.expenses : {}).reduce((sum, value) => sum + sanitizeNumber(value), 0)
+  const directCost = services + expenses
+  const taxes = Number(budget.taxes ?? 0) / 100
+  const fees = Number(budget.fees ?? 0) / 100
+  const margin = Number(budget.profitMargin ?? 0) / 100
+  const legacy = budget.calculationVersion === 1
+  const current = budget.calculationVersion >= 3
+  const manual = current && budget.priceMode === 'rate'
+  const divisor = 1 - taxes - fees - margin
+  const urgencyRate = budget.urgent ? Number(budget.urgencyPercent ?? 25) / 100 : 0
+  const discount = current ? Number(budget.discount ?? 0) : 0
+  const valid = [directCost, taxes, fees, margin, urgencyRate, discount].every(Number.isFinite) && taxes >= 0 && fees >= 0 && margin >= 0 && urgencyRate >= 0 && discount >= 0 && taxes + fees < 1 && (manual || divisor > 0)
+  const beforeUrgency = valid ? (manual || legacy ? directCost : directCost / divisor) : 0
+  const urgency = current ? beforeUrgency * urgencyRate : directCost * urgencyRate
+  const suggestedPrice = current ? beforeUrgency + urgency : valid ? (legacy ? directCost + urgency : (directCost + urgency) / divisor) : 0
+  const sustainablePrice = Math.max(0, suggestedPrice - discount)
+  const knownCost = !manual || (budget.costsConfirmed === true && Number(budget.costHourly) > 0)
+  const costBasis = manual ? hours * sanitizeNumber(budget.costHourly) + expenses : directCost
+  const minimumPrice = valid && knownCost ? costBasis / (1 - taxes - fees) : null
+  const taxAmount = sustainablePrice * taxes
+  const feeAmount = sustainablePrice * fees
+  const profitAmount = knownCost ? sustainablePrice - taxAmount - feeAmount - costBasis : null
+  return { services, expenses, urgency, directCost, hours, costBasis, minimumPrice, sustainablePrice, suggestedPrice, discount, taxAmount, feeAmount, profitAmount, effectiveMargin: sustainablePrice > 0 && profitAmount !== null ? profitAmount / sustainablePrice * 100 : null, knownCost, manual, legacy, isValid: valid && Number.isFinite(sustainablePrice) && discount <= suggestedPrice }
+}
+
+export function reviewBudget(budget, result = calculateBudget(budget)) {
+  const notes = []
+  if (!budget.costsConfirmed) notes.push('Confirme seus custos no Perfil para avaliar a rentabilidade com seus próprios dados.')
+  if (!result.isValid) notes.push('Revise percentuais e desconto: o cálculo ainda não é válido.')
+  if (result.knownCost && result.minimumPrice !== null && result.sustainablePrice < result.minimumPrice) notes.push('O preço está abaixo do necessário para cobrir os custos e taxas informados.')
+  const capture = budget.activities?.find((item) => /capta|filmagem|fotografia/i.test(item.name))
+  const duration = calculateDuration(budget.startAt, budget.endAt)
+  if (capture && duration > 0 && Math.abs(Number(capture.quantity) - duration) > .01) notes.push('As horas de captação diferem da agenda. Confira se isso é intencional.')
+  if (!budget.activities?.some((item) => /edi|sele|pós/i.test(item.name) && Number(item.quantity) > 0)) notes.push('Confira se edição e seleção estão incluídas nas horas ou no escopo.')
+  if (!budget.deliveryDeadline) notes.push('Defina o prazo de entrega antes de apresentar a proposta.')
+  if (!budget.paymentMethod) notes.push('Informe a forma de pagamento para evitar dúvidas do cliente.')
+  return notes
 }
 export function formatCurrency(value) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number.isFinite(value) ? value : 0) }

@@ -47,5 +47,5 @@ export function NumericInput({ value, onChange, defaultValue = 0, ...props }) {
     props.onBlur?.(event)
   }
 
-  return <input {...props} type="number" value={editing ? draft : value ?? ''} onFocus={focus} onChange={change} onBlur={blur} />
+  return <input {...props} type="number" step="any" min="0" value={editing ? draft : value ?? ''} onFocus={focus} onChange={change} onBlur={blur} />
 }

@@ -1,4 +1,4 @@
-import { calculateBudget } from './calculations'
+import { calculateBudget } from './calculations.js'
 
 const clientTypes = ['pessoa_fisica', 'pessoa_juridica']
 const clientStatuses = ['ativo', 'inativo']
@@ -55,19 +55,20 @@ export function createClient(data = {}) { const now = new Date().toISOString(); 
 export function calculateClientMetrics(client, budgets) {
   const related = budgets.filter((budget) => budget.clientId === client.id)
   const approved = related.filter((budget) => ['Orçamento aprovado', 'Contrato aguardando assinatura', 'Contrato assinado', 'Em produção', 'Entregue', 'Concluído'].includes(budget.status))
-  const revenue = approved.reduce((sum, budget) => sum + Number(budget.clientRevenue ?? calculateBudget(budget).sustainablePrice ?? 0), 0)
+  const contracted = approved.reduce((sum, budget) => sum + calculateBudget(budget).sustainablePrice, 0)
+  const received = related.reduce((sum, budget) => sum + Math.max(0, Number(budget.amountReceived) || 0), 0)
   const latest = related.map((budget) => budget.startAt || budget.issueDate || '').filter(Boolean).sort().at(-1) || client.lastContactAt || ''
-  return { proposalCount: related.length, approvedProposalCount: approved.length, totalRevenue: revenue, lastContactAt: latest }
+  return { proposalCount: related.length, approvedProposalCount: approved.length, totalRevenue: contracted, contracted, received, outstanding: approved.reduce((sum, budget) => sum + Math.max(0, calculateBudget(budget).sustainablePrice - Math.max(0, Number(budget.amountReceived) || 0)), 0), lastActivityAt: latest }
 }
 
 export function refreshClientMetrics(clients, budgets) { return clients.map((client) => ({ ...client, ...calculateClientMetrics(client, budgets) })) }
 
 export function migrateClientData(rawClients, rawBudgets) {
-  const clients = Array.isArray(rawClients) ? rawClients.map(normalizeClient) : []
+  const clients = Array.isArray(rawClients) ? rawClients.filter((item) => item && typeof item === 'object' && !Array.isArray(item)).map((item) => normalizeClient({ ...item, id: item.id || crypto.randomUUID() })) : []
   const byKey = new Map()
   clients.forEach((client) => { const key = clientKey(clientDisplayName(client)); if (key) byKey.set(key, client) })
   const budgets = Array.isArray(rawBudgets) ? rawBudgets.map((budget) => {
-    if (budget.clientId) return budget
+    if (budget.clientId || budget.clientDetached) return budget
     const key = clientKey(budget.clientName)
     if (!key) return budget
     let client = byKey.get(key)
